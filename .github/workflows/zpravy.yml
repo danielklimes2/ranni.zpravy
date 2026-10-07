@@ -1,0 +1,36 @@
+name: Ranni zpravy
+
+on:
+  schedule:
+    # čas je v UTC: 05:00 UTC = 7:00 letního / 6:00 zimního času u nás
+    - cron: "0 5 * * *"
+  workflow_dispatch:   # umožní spustit ručně tlačítkem "Run workflow"
+
+permissions:
+  contents: write      # workflow smí uložit nové soubory do repozitáře
+
+jobs:
+  zpravy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalace knihoven
+        run: pip install anthropic feedparser markdown
+
+      - name: Vytvoření shrnutí
+        run: python ranni_zpravy.py
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
+      - name: Uložení výsledku do repozitáře
+        run: |
+          git config user.name "zpravy-bot"
+          git config user.email "zpravy-bot@users.noreply.github.com"
+          git add index.html archiv
+          git commit -m "Zprávy $(date +%F)" || exit 0
+          git push
